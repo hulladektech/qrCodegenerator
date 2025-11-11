@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Text to QR Code • Elegant</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg1:#bfe288;
+    --bg2:#22c55e;
+    --card-bg: rgba(255,255,255,0.7);
+    --card-stroke: rgba(255,255,255,0.6);
+    --text:#0f172a;
+    --muted:#475569;
+    --accent:#14532d;
+    --btn:#16a34a;
+    --btn-hover:#0f9a41;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100dvh;
+    font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    background: radial-gradient(1200px 600px at 10% 10%, var(--bg1), transparent 60%),
+                radial-gradient(1200px 600px at 90% 90%, var(--bg2), transparent 60%),
+                linear-gradient(135deg,#e9f7ff,#ecfdf5);
+    display:flex; align-items:center; justify-content:center; padding:28px;
+    color:var(--text);
+  }
+  .wrap{
+    width:100%; max-width:980px; display:grid; gap:20px;
+    grid-template-columns: 1.2fr 1fr;
+  }
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr} }
+
+  .card{
+    background:var(--card-bg);
+    backdrop-filter: blur(14px);
+    border:1px solid var(--card-stroke);
+    border-radius:24px;
+    box-shadow: 0 20px 40px rgba(16,24,40,.15);
+    padding:22px;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .card:hover{ transform: translateY(-2px); box-shadow: 0 26px 60px rgba(16,24,40,.18); }
+
+  .title{
+    display:flex; align-items:center; gap:10px; margin:0 0 6px 0;
+    font-size:20px; font-weight:700;
+  }
+  /* 🔹 header/title সেকশনে ছোট লোগো ইমেজ */
+  .title .logo{
+    height:26px; width:auto; display:inline-block; border-radius:6px;
+  }
+
+  .subtitle{ margin:0 0 16px 0; color:var(--muted); font-size:13px }
+
+  textarea{
+    width:100%; min-height:140px; resize:vertical;
+    padding:14px 16px; border-radius:16px; border:2px solid #2563eb20;
+    outline:none; font-size:15px; line-height:1.5; background:#ffffffea;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  textarea:focus{ border-color:#22c55e55; box-shadow:0 0 0 6px #22c55e1f; }
+
+  .controls{ display:grid; gap:12px; grid-template-columns: 1fr 1fr; margin:14px 0 6px }
+  @media (max-width:520px){ .controls{grid-template-columns:1fr} }
+
+  .control{
+    display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted);
+  }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px }
+
+  .btn{
+    appearance:none; border:none; border-radius:12px; padding:12px 18px;
+    background:var(--btn); color:#fff; font-weight:600; cursor:pointer;
+    transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+    box-shadow: 0 10px 20px rgba(22,163,74,.25);
+  }
+  .btn:hover{ background:var(--btn-hover) }
+  .btn:active{ transform: translateY(1px) }
+  .btn.secondary{
+    background:#1b6034; box-shadow: 0 10px 20px rgba(131, 223, 134, 0.25);
+  }
+  .btn.ghost{
+    background:transparent; color:var(--accent);
+    border:1.5px dashed #16a34a60;
+  }
+
+  .switch{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)
+  }
+  .switch input{ width:42px; height:24px; appearance:none; background:#e2e8f0; border-radius:999px; position:relative; outline:none; cursor:pointer; transition:background .2s}
+  .switch input:checked{ background:#22c55e70 }
+  .switch input::after{
+    content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; background:white; border-radius:50%;
+    box-shadow:0 2px 6px rgba(0,0,0,.2); transition:left .2s
+  }
+  .switch input:checked::after{ left:21px }
+
+  .preview{
+    display:flex; align-items:center; justify-content:center; min-height:320px;
+    background:#fff; border-radius:20px; border:1px solid #e2e8f0; position:relative;
+  }
+  .preview .placeholder{
+    color:#94a3b8; font-size:14px;
+  }
+  #qrcode canvas, #qrcode img{ border-radius:12px }
+
+  .small{ font-size:12px; color:#64748b }
+
+  .footer-note{ text-align:center; margin-top:10px; font-size:12px; color:#64748b }
+
+  /* 🔹 শুধুমাত্র dropdown (select) এর ফন্ট পাল্টানো */
+  #ecLevel{
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid #c7e8cf;
+    background: #ffffffec;
+    outline: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Left: Input & Controls -->
+  <section class="card">
+    <h2 class="title">
+        <img src="logo.png" alt="Logo" class="logo">
+      🧠 Text to QR Code
+      <!-- 🔹 এখানে header/title এ ইমেজ যুক্ত করা হলো -->
+    </h2>
+    <!--<p class="subtitle">টেক্সট লিখে সাথে সাথে সুন্দর একটা QR তৈরি করুন। চাইলে সাইজ ও Error Correction বদলাতে পারবেন।</p>-->
+
+    <textarea id="textInput" placeholder="Write your text here (e.g., https://example.com or any text)...">Hello from Sourav's QR ✨</textarea>
+    <div class="row small">
+      <span id="charCount">0 chars</span>
+      <span style="margin-left:auto" id="statusText"></span>
+    </div>
+
+    <div class="controls">
+      <label class="control">
+        <span>Size (px)</span>
+        <input type="range" id="sizeInput" min="128" max="512" step="8" value="256"
+               oninput="document.getElementById('sizeOut').textContent=this.value">
+        <div class="small">Selected: <strong id="sizeOut">256</strong> px</div>
+      </label>
+
+      <label class="control">
+        <span>Error Correction</span>
+        <select id="ecLevel">
+          <option value="M">M (default)</option>
+          <option value="L">L (max capacity)</option>
+          <option value="Q">Q</option>
+          <option value="H">H (highest resilience)</option>
+        </select>
+        <!-- <div class="small">উচ্চ লেভেলে ক্ষতি হলেও স্ক্যান হবে, তবে ডাটা কম থাকবে।</div> -->
+      </label>
+    </div>
+
+    <div class="row">
+      <label class="switch">
+        <input type="checkbox" id="autoGen" checked>
+        <span>Auto-generate while typing</span>
+      </label>
+      <span style="flex:1"></span>
+      <button class="btn" id="genBtn">Generate</button>
+      <button class="btn ghost" id="clearBtn">Clear</button>
+    </div>
+  </section>
+
+  <!-- Right: Preview & Actions -->
+  <section class="card">
+    <h2 class="title">🔳 Preview</h2>
+    <div id="preview" class="preview">
+      <div id="qrcode" aria-live="polite">
+        <div class="placeholder">Your QR will appear here</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button class="btn secondary" id="downloadPNG" disabled>Download PNG</button>
+      <button class="btn secondary" id="downloadJPG" disabled>Download JPG</button>
+      <button class="btn ghost" id="copyText">Copy Text</button>
+    </div>
+    <!-- <p class="footer-note">Tip: বড় সাইজ + উচ্চ Error Correction নিলে প্রিন্ট-ফ্রেন্ডলি কোয়ালিটি পাবেন।</p> -->
+  </section>
+</div>
+
+<script>
+  const textInput   = document.getElementById('textInput');
+  const sizeInput   = document.getElementById('sizeInput');
+  const ecLevelSel  = document.getElementById('ecLevel');
+  const autoGen     = document.getElementById('autoGen');
+  const genBtn      = document.getElementById('genBtn');
+  const clearBtn    = document.getElementById('clearBtn');
+  const qrcodeBox   = document.getElementById('qrcode');
+  const statusText  = document.getElementById('statusText');
+  const charCount   = document.getElementById('charCount');
+  const dlPNG       = document.getElementById('downloadPNG');
+  const dlJPG       = document.getElementById('downloadJPG');
+  const copyTextBtn = document.getElementById('copyText');
+
+  const Correct = {
+    L: QRCode.CorrectLevel.L,
+    M: QRCode.CorrectLevel.M,
+    Q: QRCode.CorrectLevel.Q,
+    H: QRCode.CorrectLevel.H
+  };
+
+  function updateCharCount(){
+    const n = textInput.value.length;
+    charCount.textContent = `${n} chars`;
+  }
+
+  function setDownloadsEnabled(enabled){
+    dlPNG.disabled = dlJPG.disabled = !enabled;
+    dlPNG.style.opacity = dlJPG.style.opacity = enabled ? 1 : .6;
+  }
+
+  function renderQR(){
+    const txt  = textInput.value.trim();
+    const size = parseInt(sizeInput.value,10) || 256;
+    const ec   = Correct[ecLevelSel.value] || Correct.M;
+
+    qrcodeBox.innerHTML = '';
+    setDownloadsEnabled(false);
+    statusText.textContent = '';
+
+    if(!txt){
+      qrcodeBox.innerHTML = '<div class="placeholder">Your QR will appear here</div>';
+      return;
+    }
+
+    // Generate
+    new QRCode(qrcodeBox, { text: txt, width: size, height: size, correctLevel: ec });
+
+    // small delay for DOM paint
+    setTimeout(()=>{
+      const canvas = qrcodeBox.querySelector('canvas');
+      const img    = qrcodeBox.querySelector('img');
+      if(canvas || img){
+        setDownloadsEnabled(true);
+        statusText.textContent = 'Ready ✓';
+      }else{
+        statusText.textContent = 'Failed to render';
+      }
+    }, 50);
+  }
+
+  // Debounce for autogen typing
+  let tId = null;
+  function debouncedRender(){
+    clearTimeout(tId);
+    tId = setTimeout(renderQR, 180);
+  }
+
+  // Event wiring
+  genBtn.addEventListener('click', renderQR);
+  clearBtn.addEventListener('click', ()=>{
+    textInput.value = '';
+    updateCharCount();
+    renderQR();
+    textInput.focus();
+  });
+
+  textInput.addEventListener('input', ()=>{
+    updateCharCount();
+    if(autoGen.checked) debouncedRender();
+  });
+  sizeInput.addEventListener('input', ()=> autoGen.checked ? debouncedRender() : null);
+  ecLevelSel.addEventListener('change', ()=> autoGen.checked ? renderQR() : null);
+  autoGen.addEventListener('change', ()=> autoGen.checked ? renderQR() : null);
+
+  // Downloads
+  function getCanvas(){
+    // qrcodejs prefers canvas where available
+    const c = qrcodeBox.querySelector('canvas');
+    if(c) return c;
+    // fallback from <img> to an offscreen canvas
+    const img = qrcodeBox.querySelector('img');
+    if(!img) return null;
+    const off = document.createElement('canvas');
+    off.width = img.naturalWidth; off.height = img.naturalHeight;
+    const ctx = off.getContext('2d');
+    ctx.drawImage(img,0,0);
+    return off;
+  }
+
+  function download(type='image/png', filename='qrcode'){
+    const cnv = getCanvas();
+    if(!cnv){ return; }
+    const dataURL = cnv.toDataURL(type);
+    const a = document.createElement('a');
+    a.href = dataURL;
+    const ext = type === 'image/jpeg' ? 'jpg' : 'png';
+    a.download = `${filename}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  dlPNG.addEventListener('click', ()=> download('image/png', 'qrcode'));
+  dlJPG.addEventListener('click', ()=> download('image/jpeg', 'qrcode'));
+
+  // Copy text
+  copyTextBtn.addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(textInput.value);
+      copyTextBtn.textContent = 'Copied ✓';
+      setTimeout(()=> copyTextBtn.textContent = 'Copy Text', 1000);
+    }catch(e){
+      alert('Copy failed. You can select the text and press Ctrl/Cmd + C.');
+    }
+  });
+
+  // Initial
+  updateCharCount();
+  renderQR();
+</script>
+</body>
+</html>
